@@ -15,6 +15,8 @@ import { ChevronDown } from 'tabler-icons-react';
 
 import { ColorSchemeToggle } from '../ColorSchemeToggle/ColorSchemeToggle';
 
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+
 const HEADER_HEIGHT = 60;
 
 const useStyles = createStyles((theme) => ({
@@ -124,9 +126,7 @@ export function HeaderAction({ links }: HeaderActionProps) {
           {items}
         </Group>
         <Group>
-          <Button radius="xl" sx={{ height: 30 }}>
-            Get early access
-          </Button>
+          <ConnectButton />
           <ColorSchemeToggle />
         </Group>
       </Container>

@@ -1,40 +1,80 @@
-import React from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { Anchor, Paper, Title, Text, Container, Group, Button } from '@mantine/core';
 
 // web3
-import { useProvider, useSigner } from 'wagmi';
-import { ethers } from 'ethers';
+import { useAccount, useNetwork, useSignMessage } from 'wagmi';
+// import { ethers } from 'ethers';
 import { SiweMessage } from 'siwe';
 
 // components
-import { CustomConnectButton } from '../components/CustomConnectButton/CustomConnectButton';
+// import { CustomConnectButton } from '../components/CustomConnectButton/CustomConnectButton';
 import NavBar from '../components/NavBar/NavBar';
 
 export default function Auth() {
-  const domain = window.location.host;
-  const { origin } = window.location;
-  const provider = useProvider();
-  const { data: signer, isError, isLoading } = useSigner();
+  const { address, isConnected } = useAccount();
+  const { chain: activeChain } = useNetwork();
 
-  function createSiweMessage(address: string, statement: string) {
-    const message = new SiweMessage({
-      domain,
-      address,
-      statement,
-      uri: origin,
-      version: '1',
-      chainId: 1,
-    });
-    return message.prepareMessage();
-  }
+  const [state, setState] = useState<{
+    address?: string;
+    error?: Error;
+    loading?: boolean;
+  }>({});
 
-  async function signInWithEthereum() {
-    const message = createSiweMessage(
-      await signer.getAddress(),
-      'Sign in with Ethereum to the app.'
-    );
-    console.log(await signer.signMessage(message));
-  }
+  const { signMessageAsync } = useSignMessage();
+
+  const signIn = useCallback(async () => {
+    try {
+      const chainId = activeChain?.id;
+      if (!address || !chainId) return;
+
+      setState((x) => ({ ...x, error: undefined, loading: true }));
+      // Fetch random nonce, create SIWE message, and sign with wallet
+      const nonceRes = await fetch('/api/nonce');
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: 'Sign in with Ethereum to the app.',
+        uri: window.location.origin,
+        version: '1',
+        chainId,
+        nonce: await nonceRes.text(),
+      });
+      const signature = await signMessageAsync({
+        message: message.prepareMessage(),
+      });
+
+      // Verify signature
+      const verifyRes = await fetch('/api/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message, signature }),
+      });
+      if (!verifyRes.ok) throw new Error('Error verifying message');
+
+      setState((x) => ({ ...x, address, loading: false }));
+    } catch (error) {
+      setState((x: any) => ({ ...x, error, loading: false }));
+    }
+  }, []);
+
+  // Fetch user when:
+  useEffect(() => {
+    const handler = async () => {
+      try {
+        const res = await fetch('/api/me');
+        const json = await res.json();
+        setState((x) => ({ ...x, address: json.address }));
+      } catch (_error) {}
+    };
+    // 1. page loads
+    handler();
+
+    // 2. window is focused (in case user logs out of another window)
+    window.addEventListener('focus', handler);
+    return () => window.removeEventListener('focus', handler);
+  }, []);
 
   return (
     <>
@@ -55,27 +95,29 @@ export default function Auth() {
 
         <Paper withBorder shadow="md" p={30} mt={30} radius="md">
           <Group>
-            Step 1: Connect your wallet
-            <CustomConnectButton />
-          </Group>
-          <Group position="apart" mt="md">
-            Step 2: Sign in with your wallet
-            <Button onClick={() => signInWithEthereum()}>Sign in to DAO BOX</Button>
+            <div>
+              {/* Account content goes here */}
+
+              {state.address ? (
+                <div>
+                  <div>Signed in as {state.address}</div>
+                  <Button
+                    onClick={async () => {
+                      await fetch('/api/logout');
+                      setState({});
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button disabled={state.loading} onClick={signIn}>
+                  Sign-In with Ethereum
+                </Button>
+              )}
+            </div>
           </Group>
         </Paper>
-        {/* <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-          <TextInput label="Email" placeholder="you@mantine.dev" required />
-          <PasswordInput label="Password" placeholder="Your password" required mt="md" />
-          <Group position="apart" mt="md">
-            <Checkbox label="Remember me" />
-            <Anchor<'a'> onClick={(event) => event.preventDefault()} href="#" size="sm">
-              Forgot password?
-            </Anchor>
-          </Group>
-          <Button fullWidth mt="xl">
-            Sign in
-          </Button>
-        </Paper> */}
       </Container>
     </>
   );

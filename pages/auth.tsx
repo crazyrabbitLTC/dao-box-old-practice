@@ -1,5 +1,17 @@
 import React, { useEffect } from 'react';
-import { Anchor, Paper, Title, Text, Container, Group, Button, Loader } from '@mantine/core';
+import {
+  Anchor,
+  Paper,
+  Title,
+  Text,
+  Container,
+  Group,
+  Button,
+  Loader,
+  List,
+  ThemeIcon,
+} from '@mantine/core';
+import { CircleCheck, CircleDashed } from 'tabler-icons-react';
 
 // web3
 import { useAccount } from 'wagmi';
@@ -16,20 +28,48 @@ export default function Auth() {
   const { user, loading, error, signIn, logout } = useAuth();
   const { address, isConnecting, isConnected, isDisconnected } = useAccount();
 
-  const [buttonState, setButtonState] = React.useState({ text: 'loading', spinner: true });
+  const CONNECT_WALLET = 'Connect Wallet';
+  const SIGN_IN_WITH_ETHEREUM = 'Sign in with Ethereum';
+  const SIGNING_IN = 'Signing in...';
+  const LOADING = 'loading...';
+
+  const [buttonState, setButtonState] = React.useState({ text: LOADING, spinner: true, state: 0 });
 
   useEffect(() => {
     if (!isConnected) {
-      setButtonState({ text: 'Connect Wallet', spinner: false });
+      setButtonState({ text: CONNECT_WALLET, spinner: false, state: 1 });
     }
-    if (isConnected) {
-      setButtonState({ text: 'Disconnect Wallet', spinner: false });
+    if (isConnected && !user?.address) {
+      setButtonState({ text: SIGN_IN_WITH_ETHEREUM, spinner: false, state: 2 });
     }
     if (isConnected && user?.address) {
-      setButtonState({ text: 'loading', spinner: true });
+      setButtonState({ text: SIGNING_IN, spinner: true, state: 3 });
     }
   }, [isConnected, user]);
 
+  const greenIcon = () => (
+    <ThemeIcon color="teal" size={24} radius="xl">
+      <CircleCheck size={16} />
+    </ThemeIcon>
+  );
+
+  const blueIcon = () => (
+    <ThemeIcon color="blue" size={24} radius="xl">
+      <CircleDashed size={16} />
+    </ThemeIcon>
+  );
+
+  // const iconState = () => {
+
+  //   const color =
+  //   return(
+  //     <ThemeIcon color="blue" size={24} radius="xl">
+  //     <CircleDashed size={16} />
+  //   </ThemeIcon>
+  //   )
+  // }
+
+  console.log('button ', buttonState.state);
   return (
     <>
       <NavBar />
@@ -42,11 +82,33 @@ export default function Auth() {
             Get into a Box!
           </Title>
           <Text color="dimmed" size="sm" align="center" mt={5}>
-            We use Sign in with Ethereum, need help?{' '}
+            Need help? {''}
             <Anchor<'a'> href="#" size="sm" onClick={(event) => event.preventDefault()}>
               Get a Wallet
             </Anchor>
           </Text>
+          <Group mt={5}>
+            <List spacing="xs" size="sm" center>
+              <List.Item
+                icon={
+                  <ThemeIcon color={buttonState.state > 1 ? 'teal' : 'blue'} size={24} radius="xl">
+                    {buttonState.state > 1 ? <CircleCheck size={16} /> : <CircleDashed size={16} />}
+                  </ThemeIcon>
+                }
+              >
+                Connect Wallet
+              </List.Item>
+              <List.Item
+                icon={
+                  <ThemeIcon color={buttonState.state > 2 ? 'teal' : 'blue'} size={24} radius="xl">
+                    {buttonState.state > 2 ? <CircleCheck size={16} /> : <CircleDashed size={16} />}
+                  </ThemeIcon>
+                }
+              >
+                Sign in with Ethereum
+              </List.Item>
+            </List>
+          </Group>
           <Group>
             <ConnectButton.Custom>
               {({ openConnectModal }) => (
@@ -64,75 +126,11 @@ export default function Auth() {
                   fullWidth
                   mt="xl"
                 >
-                  {buttonState.spinner ? (
-                    <Loader color="white" size="xs" />
-                  ) : isConnected ? (
-                    'Sign in'
-                  ) : (
-                    'Connect Wallet'
-                  )}
+                  {buttonState.spinner && <Loader color="white" size="xs" />}
+                  {buttonState.text}
                 </Button>
               )}
             </ConnectButton.Custom>
-
-            {/* <Button variant="gradient" gradient={{ from: 'indigo', to: 'cyan' }} fullWidth mt="xl">
-              {buttonState.spinner ? <Loader color="white" size="xs" /> : 'Connect Wallet'}
-            </Button> */}
-
-            {/* {!isConnected && !user?.address && (
-              <Button
-                variant="gradient"
-                gradient={{ from: 'indigo', to: 'cyan' }}
-                fullWidth
-                mt="xl"
-              >
-                spinner
-              </Button>
-            )}
-            {isConnected && user?.address && (
-              <Button
-                onClick={async () => {
-                  logout();
-                }}
-                variant="gradient"
-                gradient={{ from: 'orange', to: 'red' }}
-                fullWidth
-                mt="xl"
-              >
-                Sign Out
-              </Button>
-            )}
-
-            {isConnected && !user?.address && (
-              <Button
-                onClick={async () => {
-                  signIn();
-                }}
-                variant="gradient"
-                gradient={{ from: 'indigo', to: 'cyan' }}
-                fullWidth
-                mt="xl"
-              >
-                Sign In
-              </Button>
-            )}
-
-            {!isConnected && (
-              <ConnectButton.Custom>
-                {({ openConnectModal }) => (
-                  <Button
-                    onClick={openConnectModal}
-                    type="button"
-                    variant="gradient"
-                    gradient={{ from: 'indigo', to: 'cyan' }}
-                    fullWidth
-                    mt="xl"
-                  >
-                    Connect Wallet
-                  </Button>
-                )}
-              </ConnectButton.Custom>
-            )} */}
           </Group>
         </Paper>
 

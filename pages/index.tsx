@@ -6,6 +6,8 @@ import NavBar from '../components/NavBar/NavBar';
 import Hero from '../components/Hero/Hero';
 
 export default function HomePage() {
+  console.log('Here!');
+
   return (
     <>
       <NavBar />

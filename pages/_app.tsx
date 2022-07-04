@@ -18,6 +18,9 @@ import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 
+// SIWE Hooks
+import useAuth, { AuthProvider } from '../hooks/useSIWE';
+
 const { chains, provider, webSocketProvider } = configureChains(
   [
     chain.mainnet,
@@ -64,7 +67,6 @@ export default function App(props: AppProps & { colorScheme: ColorScheme }) {
     setColorScheme(nextColorScheme);
     setCookies('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
   };
-
   return (
     <>
       <Head>
@@ -77,9 +79,11 @@ export default function App(props: AppProps & { colorScheme: ColorScheme }) {
         <MantineProvider theme={{ colorScheme }} withGlobalStyles withNormalizeCSS>
           <NotificationsProvider>
             <WagmiConfig client={wagmiClient}>
-              <RainbowKitProvider appInfo={demoAppInfo} chains={chains}>
-                <Component {...pageProps} />
-              </RainbowKitProvider>
+              <AuthProvider>
+                <RainbowKitProvider appInfo={demoAppInfo} chains={chains}>
+                  <Component {...pageProps} />
+                </RainbowKitProvider>
+              </AuthProvider>
             </WagmiConfig>
           </NotificationsProvider>
         </MantineProvider>

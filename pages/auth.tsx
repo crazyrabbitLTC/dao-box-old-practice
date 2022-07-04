@@ -1,6 +1,8 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { Anchor, Paper, Title, Text, Container, Group, Button } from '@mantine/core';
 
+import useAuth from '../hooks/useSIWE';
+
 // web3
 import { useAccount, useNetwork, useSignMessage } from 'wagmi';
 // import { ethers } from 'ethers';
@@ -11,73 +13,7 @@ import { CustomConnectButton } from '../components/CustomConnectButton/CustomCon
 import NavBar from '../components/NavBar/NavBar';
 
 export default function Auth() {
-  const { address, isConnected } = useAccount();
-  const { chain: activeChain } = useNetwork();
-
-  const [state, setState] = useState<{
-    address?: string;
-    error?: Error;
-    loading?: boolean;
-  }>({});
-
-  console.log('state: ', state);
-  console.log('connected: ', isConnected);
-  
-  const { signMessageAsync } = useSignMessage();
-
-  const signIn = useCallback(async () => {
-    try {
-      const chainId = activeChain?.id;
-      if (!address || !chainId) return;
-
-      setState((x) => ({ ...x, error: undefined, loading: true }));
-      // Fetch random nonce, create SIWE message, and sign with wallet
-      const nonceRes = await fetch('/api/nonce');
-      const message = new SiweMessage({
-        domain: window.location.host,
-        address,
-        statement: 'Sign in with Ethereum to the app.',
-        uri: window.location.origin,
-        version: '1',
-        chainId,
-        nonce: await nonceRes.text(),
-      });
-      const signature = await signMessageAsync({
-        message: message.prepareMessage(),
-      });
-
-      // Verify signature
-      const verifyRes = await fetch('/api/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message, signature }),
-      });
-      if (!verifyRes.ok) throw new Error('Error verifying message');
-
-      setState((x) => ({ ...x, address, loading: false }));
-    } catch (error) {
-      setState((x: any) => ({ ...x, error, loading: false }));
-    }
-  }, []);
-
-  // Fetch user when:
-  useEffect(() => {
-    const handler = async () => {
-      try {
-        const res = await fetch('/api/me');
-        const json = await res.json();
-        setState((x) => ({ ...x, address: json.address }));
-      } catch (_error) {}
-    };
-    // 1. page loads
-    handler();
-
-    // 2. window is focused (in case user logs out of another window)
-    window.addEventListener('focus', handler);
-    return () => window.removeEventListener('focus', handler);
-  }, []);
+  const { user, loading, error, signIn, logout } = useAuth();
 
   return (
     <>
@@ -101,25 +37,31 @@ export default function Auth() {
             <div>
               {/* Account content goes here */}
 
-              {state.address ? (
+              {user?.address ? (
                 <div>
-                  <div>Signed in as {state.address}</div>
+                  <div>Signed in as {user?.address}</div>
                   <Button
                     onClick={async () => {
-                      await fetch('/api/logout');
-                      setState({});
+                      logout();
                     }}
                   >
                     Sign Out
                   </Button>
                 </div>
               ) : (
-                <Button disabled={state.loading} onClick={signIn}>
+                <Button disabled={loading} onClick={signIn}>
                   Sign-In with Ethereum
                 </Button>
               )}
             </div>
           </Group>
+          <Button
+            onClick={async () => {
+              logout();
+            }}
+          >
+            Sign Out
+          </Button>
         </Paper>
       </Container>
     </>

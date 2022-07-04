@@ -17,7 +17,14 @@ export const CustomConnectButton = () => (
         {(() => {
           if (!mounted || !account || !chain) {
             return (
-              <Button onClick={openConnectModal} type="button">
+              <Button
+                onClick={openConnectModal}
+                type="button"
+                variant="gradient"
+                gradient={{ from: 'indigo', to: 'cyan' }}
+                fullWidth
+                mt="xl"
+              >
                 Connect Wallet
               </Button>
             );

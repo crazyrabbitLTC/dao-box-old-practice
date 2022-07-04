@@ -19,7 +19,7 @@ import { alchemyProvider } from 'wagmi/providers/alchemy';
 import { publicProvider } from 'wagmi/providers/public';
 
 // SIWE Hooks
-import useAuth, { AuthProvider } from '../hooks/useSIWE';
+import { AuthProvider } from '../hooks/useSIWE';
 
 const { chains, provider, webSocketProvider } = configureChains(
   [

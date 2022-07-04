@@ -10,7 +10,7 @@ import React, {
 // import { useLocation } from 'react-router-dom';
 
 // web3
-import { useAccount, useNetwork, useSignMessage } from 'wagmi';
+import { useAccount, useNetwork, useSignMessage, useDisconnect } from 'wagmi';
 // import { ethers } from 'ethers';
 import { SiweMessage } from 'siwe';
 
@@ -37,7 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingInitial, setLoadingInitial] = useState<boolean>(true);
 
-  const { address } = useAccount();
+  const { address, isDisconnected, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  
   const { chain: activeChain } = useNetwork();
   const { signMessageAsync } = useSignMessage();
 
@@ -73,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
   //SIWE
   const signIn = async () => {
-    console.log('signIn');
     try {
       const chainId = activeChain?.id;
       if (!address || !chainId) return;
@@ -117,6 +118,14 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     setState((x) => ({ ...x, user: { address: undefined } }));
   }
 
+  // check if they disconnect their wallet
+  useEffect(() => {
+    if (state?.user?.address && isDisconnected) {
+      logout();
+      disconnect();
+    }
+  }, [isDisconnected, state?.user?.address]);
+
   // Make the provider update only when it should.
   // We only want to force re-renders if the user,
   // loading or error states change.
@@ -128,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   // we want to keep things very performant.
   const memoedValue = useMemo(
     () => ({
-      state,
+      user: state?.user,
       loading,
       error,
       signIn,
@@ -139,7 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
   // We only want to render the underlying app after we
   // assert for the presence of a current user.
-  console.log('MemoedValue: ', memoedValue);
   return <AuthContext.Provider value={memoedValue}>{children}</AuthContext.Provider>;
 }
 

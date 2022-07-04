@@ -7,7 +7,7 @@ import { useAccount, useNetwork, useSignMessage } from 'wagmi';
 import { SiweMessage } from 'siwe';
 
 // components
-// import { CustomConnectButton } from '../components/CustomConnectButton/CustomConnectButton';
+import { CustomConnectButton } from '../components/CustomConnectButton/CustomConnectButton';
 import NavBar from '../components/NavBar/NavBar';
 
 export default function Auth() {
@@ -20,6 +20,9 @@ export default function Auth() {
     loading?: boolean;
   }>({});
 
+  console.log('state: ', state);
+  console.log('connected: ', isConnected);
+  
   const { signMessageAsync } = useSignMessage();
 
   const signIn = useCallback(async () => {
